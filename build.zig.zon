@@ -1,0 +1,8 @@
+.{
+    .name = .sqlitez,
+    .paths = .{""},
+    .version = "0.0.1",
+    .fingerprint = 0x61dc2e25844cc55a,
+    .minimum_zig_version = "0.14.0",
+    .dependencies = .{},
+}
