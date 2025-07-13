@@ -1,0 +1,12 @@
+[
+  {
+    "label": "Run unit tests",
+    "command": "zig build test --summary all",
+    "reveal": "no_focus"
+  },
+  {
+    "label": "Run unit tests in examples",
+    "command": "zig build test-examples --summary all",
+    "reveal": "no_focus"
+  }
+]
