@@ -52,6 +52,7 @@ const examples = [_][]const u8{
     "single_row",
     "many_rows",
     "mutation",
+    "disk",
 };
 
 pub fn buildExamples(b: *std.Build, sqlitez_module: *std.Build.Module, target: std.Build.ResolvedTarget, optimize: std.builtin.OptimizeMode, test_filters: []const []const u8) void {

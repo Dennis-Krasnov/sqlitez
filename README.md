@@ -35,6 +35,7 @@ zig build test --summary all
 zig build run-single-row
 zig build run-many-rows
 zig build run-mutation
+zig build run-disk
 
 zig build test-examples --summary all
 ```

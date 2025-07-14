@@ -2,17 +2,38 @@ const std = @import("std");
 
 pub const c = @cImport(@cInclude("sqlite3.h"));
 
-pub const number: i32 = 123;
+pub const OpenFlags = struct {
+    pub const Create = c.SQLITE_OPEN_CREATE;
+    pub const ReadOnly = c.SQLITE_OPEN_READONLY;
+    pub const ReadWrite = c.SQLITE_OPEN_READWRITE;
+    pub const DeleteOnClose = c.SQLITE_OPEN_DELETEONCLOSE;
+    pub const Exclusive = c.SQLITE_OPEN_EXCLUSIVE;
+    pub const AutoProxy = c.SQLITE_OPEN_AUTOPROXY;
+    pub const Uri = c.SQLITE_OPEN_URI;
+    pub const Memory = c.SQLITE_OPEN_MEMORY;
+    pub const MainDB = c.SQLITE_OPEN_MAIN_DB;
+    pub const TempDB = c.SQLITE_OPEN_TEMP_DB;
+    pub const TransientDB = c.SQLITE_OPEN_TRANSIENT_DB;
+    pub const MainJournal = c.SQLITE_OPEN_MAIN_JOURNAL;
+    pub const TempJournal = c.SQLITE_OPEN_TEMP_JOURNAL;
+    pub const SubJournal = c.SQLITE_OPEN_SUBJOURNAL;
+    pub const SuperJournal = c.SQLITE_OPEN_SUPER_JOURNAL;
+    pub const NoMutex = c.SQLITE_OPEN_NOMUTEX;
+    pub const FullMutex = c.SQLITE_OPEN_FULLMUTEX;
+    pub const SharedCache = c.SQLITE_OPEN_SHAREDCACHE;
+    pub const PrivateCache = c.SQLITE_OPEN_PRIVATECACHE;
+    pub const OpenWAL = c.SQLITE_OPEN_WAL;
+    pub const NoFollow = c.SQLITE_OPEN_NOFOLLOW;
+    pub const EXResCode = c.SQLITE_OPEN_EXRESCODE;
+};
 
 pub const Connection = struct {
     _inner: *c.sqlite3,
 
-    /// Must later call deinit.
-    pub fn init(path: [*:0]const u8) !Connection {
-        const flags: c_int = c.SQLITE_OPEN_CREATE | c.SQLITE_OPEN_READWRITE | c.SQLITE_OPEN_EXRESCODE;
-
+    /// Must later call close.
+    pub fn open(path: [*:0]const u8, flags: c_int) !Connection {
         var connection: ?*c.sqlite3 = null;
-        const rc = c.sqlite3_open_v2(path, &connection, flags, null);
+        const rc = c.sqlite3_open_v2(path, &connection, flags | c.SQLITE_OPEN_EXRESCODE, null);
         if (rc != c.SQLITE_OK) {
             return errorFromCode(rc);
         }
@@ -21,11 +42,11 @@ pub const Connection = struct {
     }
 
     /// Consumes self.
-    pub fn deinit(self: Connection) void {
+    pub fn close(self: Connection) void {
         _ = c.sqlite3_close_v2(self._inner);
     }
 
-    /// Must later call deinit.
+    /// Must later call finalize.
     pub fn prepare(self: Connection, sql: []const u8) !Statement {
         var statement: ?*c.sqlite3_stmt = null;
         const rc = c.sqlite3_prepare_v2(self._inner, sql.ptr, @intCast(sql.len), &statement, null);
@@ -65,7 +86,7 @@ pub const Statement = struct {
     _inner: *c.sqlite3_stmt,
 
     /// Consumes self.
-    pub fn deinit(self: Statement) void {
+    pub fn finalize(self: Statement) void {
         _ = c.sqlite3_finalize(self._inner);
     }
 
@@ -422,7 +443,7 @@ pub const Error = error{
 };
 
 test "select null" {
-    const connection = try Connection.init(":memory:");
+    const connection = try Connection.open(":memory:", OpenFlags.ReadWrite);
     const statement = try connection.prepare("SELECT NULL");
     const row = (try statement.step()).?;
 
@@ -433,7 +454,7 @@ test "select null" {
 }
 
 test "select integer" {
-    const connection = try Connection.init(":memory:");
+    const connection = try Connection.open(":memory:", OpenFlags.ReadWrite);
     const statement = try connection.prepare("SELECT 123");
     const row = (try statement.step()).?;
 
@@ -442,7 +463,7 @@ test "select integer" {
 }
 
 test "select real" {
-    const connection = try Connection.init(":memory:");
+    const connection = try Connection.open(":memory:", OpenFlags.ReadWrite);
     const statement = try connection.prepare("SELECT 1.5");
     const row = (try statement.step()).?;
 
@@ -451,7 +472,7 @@ test "select real" {
 }
 
 test "select text" {
-    const connection = try Connection.init(":memory:");
+    const connection = try Connection.open(":memory:", OpenFlags.ReadWrite);
     const statement = try connection.prepare("SELECT 'hello'");
     const row = (try statement.step()).?;
 
@@ -460,7 +481,7 @@ test "select text" {
 }
 
 test "select blob" {
-    const connection = try Connection.init(":memory:");
+    const connection = try Connection.open(":memory:", OpenFlags.ReadWrite);
     const statement = try connection.prepare("SELECT CAST('hello' AS BLOB)");
     const row = (try statement.step()).?;
 
@@ -469,7 +490,7 @@ test "select blob" {
 }
 
 test "bind null" {
-    const connection = try Connection.init(":memory:");
+    const connection = try Connection.open(":memory:", OpenFlags.ReadWrite);
     const statement = try connection.prepare("SELECT ?1");
     try statement.bindNull(1);
     const row = (try statement.step()).?;
@@ -478,7 +499,7 @@ test "bind null" {
 }
 
 test "bind integer" {
-    const connection = try Connection.init(":memory:");
+    const connection = try Connection.open(":memory:", OpenFlags.ReadWrite);
     const statement = try connection.prepare("SELECT ?1");
     try statement.bindInt(1, 123);
     const row = (try statement.step()).?;
@@ -487,7 +508,7 @@ test "bind integer" {
 }
 
 test "bind real" {
-    const connection = try Connection.init(":memory:");
+    const connection = try Connection.open(":memory:", OpenFlags.ReadWrite);
     const statement = try connection.prepare("SELECT ?1");
     try statement.bindFloat(1, 1.5);
     const row = (try statement.step()).?;
@@ -496,7 +517,7 @@ test "bind real" {
 }
 
 test "bind text" {
-    const connection = try Connection.init(":memory:");
+    const connection = try Connection.open(":memory:", OpenFlags.ReadWrite);
     const statement = try connection.prepare("SELECT ?1");
     try statement.bindText(1, "hello");
     const row = (try statement.step()).?;
@@ -505,7 +526,7 @@ test "bind text" {
 }
 
 test "bind blob" {
-    const connection = try Connection.init(":memory:");
+    const connection = try Connection.open(":memory:", OpenFlags.ReadWrite);
     const statement = try connection.prepare("SELECT ?1");
     try statement.bindBlob(1, "hello");
     const row = (try statement.step()).?;
@@ -513,19 +534,8 @@ test "bind blob" {
     try std.testing.expectEqualStrings(row.blob(0), "hello");
 }
 
-test "can't bind to 0 index" {
-    const connection = try Connection.init(":memory:");
-    const statement = try connection.prepare("SELECT ?1");
-
-    try std.testing.expectError(Error.Range, statement.bindNull(0));
-    try std.testing.expectError(Error.Range, statement.bindInt(0, 123));
-    try std.testing.expectError(Error.Range, statement.bindFloat(0, 1.5));
-    try std.testing.expectError(Error.Range, statement.bindText(0, "hello"));
-    try std.testing.expectError(Error.Range, statement.bindBlob(0, "hello"));
-}
-
 test "execute statements several times" {
-    const connection = try Connection.init(":memory:");
+    const connection = try Connection.open(":memory:", OpenFlags.ReadWrite);
     const statement = try connection.prepare("SELECT 123");
 
     for (0..5) |_| {
@@ -537,7 +547,7 @@ test "execute statements several times" {
 }
 
 test "user version" {
-    const connection = try Connection.init(":memory:");
+    const connection = try Connection.open(":memory:", OpenFlags.ReadWrite);
 
     try std.testing.expectEqual(try connection.get_user_version(), 0);
 

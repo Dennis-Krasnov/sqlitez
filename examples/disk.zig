@@ -2,7 +2,7 @@ const std = @import("std");
 const sqlitez = @import("sqlitez");
 
 pub fn main() !void {
-    const connection = try sqlitez.Connection.open(":memory:", sqlitez.OpenFlags.ReadWrite);
+    const connection = try sqlitez.Connection.open("/tmp/db.sqlite", sqlitez.OpenFlags.Create | sqlitez.OpenFlags.ReadWrite);
     defer connection.close();
 
     const statement = try connection.prepare("SELECT 123");
