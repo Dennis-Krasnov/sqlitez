@@ -67,6 +67,8 @@ pub const Connection = struct {
     /// ...
     pub fn get_user_version(self: Connection) !i32 {
         const statement = try self.prepare("PRAGMA user_version");
+        defer statement.finalize();
+
         const row = (try statement.step()).?;
         return @intCast(row.int(0));
     }
@@ -75,6 +77,7 @@ pub const Connection = struct {
         var buffer: [64]u8 = undefined;
         var fba = std.heap.FixedBufferAllocator.init(&buffer);
 
+        // pragma statements can't have bind parameters
         const sql = try std.fmt.allocPrintZ(fba.allocator(), "PRAGMA user_version = {d}", .{user_version});
         defer fba.allocator().free(sql);
 
