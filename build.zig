@@ -5,6 +5,8 @@ pub fn build(b: *std.Build) void {
     const optimize = b.standardOptimizeOption(.{});
     const test_filters = b.option([]const []const u8, "test-filter", "Skip tests that don't match the filter") orelse &.{};
 
+    const lib_path = b.path("lib");
+
     const sqlite_source = std.Build.Module.CSourceFile{
         .file = b.path("lib/sqlite3.c"),
         .flags = &[_][]const u8{
@@ -36,6 +38,7 @@ pub fn build(b: *std.Build) void {
         .optimize = optimize,
     });
     sqlitez_module.addCSourceFile(sqlite_source);
+    sqlitez_module.addIncludePath(lib_path);
     sqlitez_module.link_libc = true;
 
     // test
