@@ -78,7 +78,7 @@ pub const Connection = struct {
         var fba = std.heap.FixedBufferAllocator.init(&buffer);
 
         // pragma statements can't have bind parameters
-        const sql = try std.fmt.allocPrintZ(fba.allocator(), "PRAGMA user_version = {d}", .{user_version});
+        const sql = try std.fmt.allocPrintSentinel(fba.allocator(), "PRAGMA user_version = {d}", .{user_version}, 0);
         defer fba.allocator().free(sql);
 
         try self.exec(sql);

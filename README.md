@@ -5,7 +5,7 @@
 - Fork if you want different SQLite compilation flags
 
 ## Zig Version
-sqlitez targets Zig 0.14.
+sqlitez targets Zig 0.15.
 
 ## Installation
 1. Add gibe as a dependency in your `build.zig.zon`:
